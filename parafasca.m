@@ -1,9 +1,12 @@
-function parafascao = parafasca(parglmo,params,Rt)
+function parafascao = parafasca(parglmo,params,Rt,ignore_factors)
 %% PARAFAC - ANOVA Simultaneous Component Analysis (PARAFASCA)
 %
 % INPUTS
 % parglmo - output of parglm.m in MEDA toolbox
+% params - factors, and interactions to model: {1,2,[1,2]}
 % Rt      - Tensor rank used for PARAFAC modelling
+% ignore_factors - if True, factors not listed in params will not be added
+% to residual tensor
 %
 % OUTPUTS
 % parafascao - parafactors{mode}(entry,parafac_component,replicate)
@@ -77,9 +80,10 @@ for ii = 1:parglmo.n_factors
     if sum(ismember(ii,main_effects)) == 1
         Xa = Xa + parglmo.factors{ii}.matrix;
         main_effects(ii) = 0;
-    else
+    elseif ignore_factors == false
         Xe = Xe + parglmo.factors{ii}.matrix; 
         main_effects(ii) = 0;
+    else
     end
 end
 
@@ -88,9 +92,10 @@ for ii = 1:size(intr_effects,2)
     if sum(ismember(permuts,intr_effects{ii},'Rows')) == 1
         Xm = Xm + parglmo.interactions{ii}.matrix;
         intr_effects{ii} = [];
-    else
+    elseif ignore_factors == false
         Xe = Xe + parglmo.interactions{ii}.matrix;
         intr_effects{ii} = [];
+    else
     end
 end
 
@@ -123,6 +128,12 @@ parafascao.iter = iter;
 parafascao.err_glm = err;
 
 parafascao.corr = corr;
+
+parafascao.factor_matrix = Xs;
+parafascao.res_matrix = Xe;
+
+parafascao.factor_tnsr = Xf_m;
+parafascao.res_tnsr = Xfe_m;
 
 end
 
@@ -205,7 +216,7 @@ for ii = 1:length(indices)
         indx_rp = logc_ar(jj);
         for kk = 1:vr
             subind = [indices(ii,:),kk,jj];
-            ind = (subind - 1) * p(:) + 1;
+            ind = (subind - 1) * p(:) + 1; % Linear indices
             Xf(ind) = Xc(indx_rp,kk);
             Xfe(ind) = Xce(indx_rp,kk);
         end
